@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 import os
 import seaborn as sns
-from matplotlib.patches import RegularPolygon
 from TBG_v1 import setup_output_folder
 
 class Reciprocal_Space:
@@ -54,149 +53,162 @@ class Reciprocal_Space:
         plt.xlim(-10,4)
         plt.ylim(-3,3)
         plt.grid(True)
-        plt.axis('equal')  # 保證 x 與 y 軸相同比例
-        #Output
+        plt.axis('equal')
+        
+        # Output
         setup_output_folder('reciprocal_space')
         outputname = 'reciprocal_space/Reciprocal_Lattice.png'
-        plt.savefig(outputname, bbox_inches='tight',dpi=300)
+        plt.savefig(outputname, bbox_inches='tight', dpi=300)
+        plt.show()
+        plt.close()
 
     @staticmethod
     def R(theta):
-        return np.array([[np.cos(theta),-np.sin(theta)],
-                        [np.sin(theta),np.cos(theta)]])
+        return np.array([[np.cos(theta), -np.sin(theta)],
+                        [np.sin(theta), np.cos(theta)]])
+    
     Rot = R(np.pi/3)
 
 
-# Q point
-def generate_Qpts(vector,b0,b1,length):
+def generate_Qpts(vector, b0, b1, length):
+    """生成 Q 點網格"""
     vectors_set = set()
-    for i in range(-length,length):
-        for j in range(-length,length):
-                vectors_set.add(tuple(vector+i*b0+j*b1))
+    for i in range(-length, length):
+        for j in range(-length, length):
+            vectors_set.add(tuple(vector + i*b0 + j*b1))
     return np.array(list(vectors_set))
 
-# def plot_point(points, output_folder, Title, length):
-#     plt.figure(figsize=(6, 6))
-#     plt.scatter(points[:, 0], points[:, 1], color='blue', marker='o')
-    
-#     # 為每個點添加標籤（如果需要）
-#     # for i, point in enumerate(points):
-#     #     plt.text(point[0], point[1], str(i), fontsize=9, ha='right')
-    
-#     plt.xlabel('X coordinate')
-#     plt.ylabel('Y coordinate')
-#     plt.title(f'{Title}_# of total pts = {points.shape[0]}')
-#     plt.grid(True)
-#     plt.axis('equal')  # 保證 x 與 y 軸相同比例
-#     # plt.show()
-
-#     # 繪製圓
-#     circle = plt.Circle((0, 0), length, color='red', fill=False, linestyle='--')
-#     plt.gca().add_artist(circle)
-    
-#     filename = f'{output_folder}/plot_points/{Title}.png'
-#     plt.savefig(filename)
-#     plt.close()
 
 def generate_Rotation_Lattice(theta, length):
-    R=Reciprocal_Space.R(theta)
+    """生成旋轉晶格點"""
+    R = Reciprocal_Space.R(theta)
     a = 2.46
     a_ = a * np.array([[-0.5, 3**0.5 / 2], [0.5, 3**0.5 / 2]])
-    t_ = np.array([np.zeros(2),(a_[0]+a_[1])/3])
-    P_1 = generate_Qpts(R@t_[0], R@a_[0], R@a_[1], length)
-    P_2 = generate_Qpts(R@t_[1], R@a_[0], R@a_[1], length)
+    t_ = np.array([np.zeros(2), (a_[0] + a_[1]) / 3])
+    
+    P_1 = generate_Qpts(R @ t_[0], R @ a_[0], R @ a_[1], length)
+    P_2 = generate_Qpts(R @ t_[1], R @ a_[0], R @ a_[1], length)
     P = np.concatenate((P_1, P_2), axis=0)
-    return P_1
+    
+    return P
 
 
+def get_parameters():
+    """
+    獲取使用者輸入的參數
+    返回: (m, length, bound)
+    """
+    print("="*50)
+    print("🎯 Moiré Pattern Generator")
+    print("="*50)
+    print("\n📋 輸入參數說明:")
+    print("  • m: 扭轉晶格參數 (預設: 15)")
+    print("  • length: 晶格搜尋範圍 (預設: 50)")
+    print("  • bound: 圖形顯示範圍 (預設: 60)")
+    print("\n💡 直接按 Enter 使用預設值\n")
+    
+    # 輸入 m
+    m_input = input("請輸入 m 值 [預設: 15]: ").strip()
+    try:
+        m = int(m_input) if m_input else 15
+    except ValueError:
+        print(f"❌ 無效輸入，使用預設值 m=15")
+        m = 15
+    
+    # 輸入 length
+    length_input = input("請輸入 length 值 [預設: 50]: ").strip()
+    try:
+        length = int(length_input) if length_input else 50
+    except ValueError:
+        print(f"❌ 無效輸入，使用預設值 length=50")
+        length = 50
+    
+    # 輸入 bound
+    bound_input = input("請輸入 bound 值 [預設: 60]: ").strip()
+    try:
+        bound = int(bound_input) if bound_input else 60
+    except ValueError:
+        print(f"❌ 無效輸入，使用預設值 bound=60")
+        bound = 60
+    
+    print("\n" + "="*50)
+    print(f"✅ 參數設定完成: m={m}, length={length}, bound={bound}")
+    print("="*50 + "\n")
+    
+    return m, length, bound
 
 
 def main():
+    """主函數 - 輸入 m 參數，輸出 Moiré 圖案"""
     
-    R_space = Reciprocal_Space()
-    R_space.Plot
-
-
-
-    return 0
+    # 獲取使用者輸入參數
+    m, length, bound = get_parameters()
+    
+    # 建立輸出資料夾
     output_folder = "Moiré Pattern"
     subfolders = ["plot_points"]
     setup_output_folder(output_folder, subfolders)
     
+    # 晶格常數
     a = 2.46
     a_ = a * np.array([[-0.5, 3**0.5 / 2], [0.5, 3**0.5 / 2]])
-    t_ = np.array([np.zeros(2),(a_[0]+a_[1])/3])    
-    length = 50
-    # m = 10
-    for m in range(15,16):
-        theta = np.arccos((3*m**2+3*m+0.5)/(3*m**2+3*m+1))
-        P = generate_Rotation_Lattice(theta/2, length)
-        Q = generate_Rotation_Lattice(-theta/2, length)
-        # P = generate_Rotation_Lattice(0, length)
-        # Q = generate_Rotation_Lattice(-theta, length)
-
-
-        # S = generate_Rotation_Lattice(0, length)
-        X = generate_Rotation_Lattice(0+np.pi/3, length)
-        Y = generate_Rotation_Lattice(2*theta+np.pi/3, length)
-        t1 = m*a_[0]+(m+1)*a_[1]
-        t1 = R(theta) @ t1
-        C = []
-        for i in range(P.shape[0]):
-            if np.abs(np.linalg.norm(P[i,:]) - 13**0.5)<= 0.001:
-                C.append(P[i,:])
-                print(i)
-        C = np.array(C)
-        print(C.shape[0])
+    t_ = np.array([np.zeros(2), (a_[0] + a_[1]) / 3])
     
-        # plot_point(P, output_folder,"Moiré Pattern",length)
-        plt.figure(figsize=(8, 8))
-        plt.title(f'm = {m}, theta = {np.degrees(theta):.4f}°')
-        plt.scatter(P[:, 0], P[:, 1], color='blue', marker='o',s = 10)
-        # plt.scatter(C[:, 0], C[:, 1], color='purple', marker='^',s = 30)
-        plt.scatter(Q[:, 0], Q[:, 1], color='red', marker='o',s = 10)
-        plt.xlabel('x(Å)')
-        plt.ylabel('y(Å)')
-        # plt.scatter(t1[0], t1[1], color='black', marker='o',s = 10)
-        # plt.scatter(X[:, 0], X[:, 1], color='orange', marker='o',s = 10)
-        # plt.scatter(Y[:, 0], Y[:, 1], color='cyan', marker='o',s = 10)
-        # plt.scatter(S[:, 0], S[:, 1], color='black', marker='o',s = 15)
-        # circle = plt.Circle((0, 0), (13**0.5), color='black', fill=False, linestyle='--')
-        circle = plt.Circle((0, 0), (np.linalg.norm(t1)), color='black', fill=False, linestyle='--')
-        # circle1 = plt.Circle((0, 0), (np.linalg.norm(t1))*7**0.5, color='black', fill=False, linestyle='--')
-        plt.gca().add_artist(circle)
-        # plt.gca().add_artist(circle1)
+    print(f"⚙️  計算 m={m} 的 Moiré 圖案...\n")
+    
+    # 計算扭轉角
+    theta = np.arccos((3*m**2 + 3*m + 0.5) / (3*m**2 + 3*m + 1))
+    print(f"  扭轉角 θ = {np.degrees(theta):.4f}°")
+    
+    # 生成兩層晶格點
+    print(f"  生成晶格點 (length={length})...")
+    P = generate_Rotation_Lattice(theta/2, length)      # 上層（+θ/2）
+    Q = generate_Rotation_Lattice(-theta/2, length)     # 下層（-θ/2）
+    
+    print(f"  上層點數: {P.shape[0]}")
+    print(f"  下層點數: {Q.shape[0]}")
+    
+    # 計算 moiré 晶格參數
+    t1 = m * a_[0] + (m + 1) * a_[1]
+    t1 = Reciprocal_Space.R(theta) @ t1
+    moiré_size = np.linalg.norm(t1)
+    print(f"  Moiré 晶格大小: {moiré_size:.4f} Å\n")
+    
+    # 繪製 Moiré 圖案
+    print(f"📈 繪製圖案 (bound={bound})...")
+    plt.figure(figsize=(10, 10), dpi=150)
+    
+    # 散點圖
+    plt.scatter(P[:, 0], P[:, 1], color='blue', marker='o', s=1, label='Layer 1 (+θ/2)', alpha=0.7)
+    plt.scatter(Q[:, 0], Q[:, 1], color='red', marker='o', s=1, label='Layer 2 (-θ/2)', alpha=0.7)
+    
+    # # 添加 moiré 晶格圓圈
+    # circle = plt.Circle((0, 0), moiré_size, color='black', fill=False, linestyle='--', linewidth=2, label='Moiré lattice')
+    # plt.gca().add_artist(circle)
+    
+    # 標籤和設定
+    # plt.title(f'm = {m}, θ = {np.degrees(theta):.4f}°', fontsize=20, fontweight='bold')
+    plt.xlabel('x (Å)', fontsize=16)
+    plt.ylabel('y (Å)', fontsize=16)
+    # plt.legend(fontsize=14, loc='upper right')
+    plt.grid(True, alpha=0.3)
+    plt.axis('equal')
+    
+    # 設定座標範圍
+    plt.xlim(-bound, bound)
+    plt.ylim(-bound, bound)
+    
+    # 儲存與顯示
+    filename = f'{output_folder}/plot_points/m_{m}_theta_{np.degrees(theta):.2f}.png'
+    plt.savefig(filename, bbox_inches='tight', dpi=300)
+    print(f"✅ 圖片已保存: {filename}\n")
+    
+    plt.show()
+    plt.close()
+    
+    print("✨ 執行完成！")
+    return 0
 
-
-        # plt.axline((0, 0), slope=3**0.5, color='black', linestyle="--")
-        # plt.axline((0, 0), slope=-3**0.5, color='black', linestyle="--")
-        # plt.axhline(y=0, color="black", linestyle="--")
-        # plt.axline((0, 0), slope=3**-0.5, color='grey', linestyle="--")
-        # plt.axline((0, 0), slope=-3**-0.5, color='grey', linestyle="--")
-        # plt.axvline(x=0, color="grey", linestyle="--")
-
-        # plt.axline((0, 0), slope=np.tan(-theta/2), color='black', linestyle="--")
-        # plt.axline((0, 0), slope=np.tan(np.pi/3-theta/2), color='black', linestyle="--")
-        # plt.axline((0, 0), slope=np.tan(2*np.pi/3-theta/2), color='black', linestyle="--")
-        # plt.axline((0, 0), slope=np.tan(np.pi/6-theta/2), color='grey', linestyle="--")
-        # plt.axline((0, 0), slope=np.tan(np.pi/6+np.pi/3-theta/2), color='grey', linestyle="--")
-        # plt.axline((0, 0), slope=np.tan(np.pi/6+2*np.pi/3-theta/2), color='grey', linestyle="--")
-        # plt.axline((0, 0), slope=-3**0.5, color='grey', linestyle="-")
-
-        # plt.grid(True)
-        plt.axis('equal')  # 保證 x 與 y 軸相同比例
-        bound = 60
-        plt.xlim(-bound,bound)
-        plt.ylim(-bound,bound)
-        plt.savefig(f'{output_folder}/plot_points/m = {m}_theta = {np.degrees(theta):.2f}.png', dpi = 800)
-        plt.show()
-        plt.close()
 
 if __name__ == "__main__":
     main()
-
-        
-# 建立 band class
-# 計算函數: 有 calculate_band_structure, calculate_band_slope
-# 畫圖函數: plot_band_structure, plot_velocity
-# 變數: length, 常數, theta部分, Q部分
