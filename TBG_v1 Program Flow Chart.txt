@@ -1,0 +1,147 @@
+┌─────────────────────────────────────────────────────────────┐
+│                      START: main()                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ↓
+        ┌────────────────────────────────────┐
+        │  STEP 1: Initialize Constants      │
+        ├────────────────────────────────────┤
+        │ • v, k_D, w = constants()          │
+        │ • s_0, s_1, s_2 = pauli_matrices() │
+        │ • m_range = [30]                   │
+        │ • θ_range ← compute from m_range   │
+        │ • SuperLatticeLength               │
+        └────────────┬───────────────────────┘
+                     │
+                     ↓
+        ┌────────────────────────────────────┐
+        │  STEP 2: Calculate Convergence     │
+        ├────────────────────────────────────┤
+        │ • length = calculate_convergence() │
+        │   (est_Qnum = 5/θ²)                │
+        │ • Create output folder             │
+        │ • Setup subfolders                 │
+        └────────────┬───────────────────────┘
+                     │
+                     ↓
+        ┌────────────────────────────────────┐
+        │  STEP 3: Generate Q-point Grid     │
+        ├────────────────────────────────────┤
+        │ • q_nn = unit reciprocal vectors   │
+        │ • b_μ = reciprocal lattice vectors │
+        │ • Q_T = generate_Qpts() [Top]      │
+        │ • Q_B = generate_Qpts() [Bottom]   │
+        │ • Q_total = concatenate(Q_T, Q_B)  │
+        │ • num_Qpts = Q.shape[0]            │
+        └────────────┬───────────────────────┘
+                     │
+                     ↓
+        ┌─────────────────────────────────────────┐
+        │  STEP 4: Setup Charge & Band Indices    │
+        ├─────────────────────────────────────────┤
+        │ • band_indices = [Qpts-1, Qpts]         │
+        │ • charge_indicies = chrage_indicies()   │
+        │ • plot_charge_type = [0, 2]             │
+        │ • plot_velocity_type = 1                │
+        │ • num_kpts = 40  (for band plotting)    │
+        └────────────┬────────────────────────────┘
+                     │
+                     ↓
+    ╔════════════════════════════════════════════════╗
+    ║  STEP 5: MAIN LOOP (for each θ in θ_range)     ║
+    ╚════════════════════════════════════════════════╝
+                     │
+                     ↓
+        ┌─────────────────────────────────────────┐
+        │  5a: Compute Theta-dependent Parameters │
+        ├─────────────────────────────────────────┤
+        │ • k_θ = 2·k_D·sin(θ/2)                  │
+        │ • α = w/(v·k_θ)                         │
+        │ • Q_t = Q · k_θ  [scale Q-points]       │
+        │ • q_nn = [q, -q, ...] [6 directions]    │
+        └────────────┬────────────────────────────┘
+                     │
+                     ↓
+        ┌─────────────────────────────────────────┐
+        │  5b: Define K-point Path in BZ          │
+        ├─────────────────────────────────────────┤
+        │ • K-paths: K'→K→Γ'→Γ→K'                 │
+        │ • k_points = generate_kpts()            │
+        │ • Total K-points: 40×4 = 160            │
+        │ • plot_point(k_points, "K-points")      │
+        └────────────┬────────────────────────────┘
+                     │
+                     ↓
+    ┌──────────────────────────────────────────────────┐
+    │  5c: INNER LOOP (for each k in k_points)        │
+    │     ┌──────────────────────────────────────────┐ │
+    │     │ i. H(k) = hamiltonian(k, Q_t, ...)       │ │
+    │     │    • Size: (74 × 74) matrix              │ │
+    │     │    • H_diag: -v·h(k, Q_i)                │ │
+    │     │    • H_off-diag: w·T(i,j)                │ │
+    │     │                                          │ │
+    │     │ ii. evals, evecs = eigh(H)               │ │
+    │     │     • 74 eigenvalues (band energies)     │ │
+    │     │     • 74×74 eigenvectors (wavefunctions) │ │
+    │     │                                          │ │
+    │     │ iii. Store: energies, eigenvectors       │ │
+    │     └──────────────────────────────────────────┘ │
+    │                    ↓ (160 iterations)            │
+    │  Output: energies (160×74), eigenvectors(160×74×74)
+    └─────────────────┬────────────────────────────────┘
+                      │
+                      ↓
+        ┌──────────────────────────────────────────┐
+        │  5d: Plot Band Structure                 │
+        ├──────────────────────────────────────────┤
+        │ • plot_band_structure(energies, ...)     │
+        │ • Output: band_structure_θ.png           │
+        │ • Shows: 74 bands vs K-path              │
+        │ • Energy range: ±0.005 eV                │
+        │ • Labels: K', K, Γ', Γ, K'               │
+        └────────┬─────────────────────────────────┘
+                 │
+                 ↓ (Optional - Currently Commented)
+    ╔════════════════════════════════════════════════╗
+    ║  5e: OPTIONAL - Calculate Band Slope & Velocity║
+    ╠════════════════════════════════════════════════╣
+    ║ • slopes = calculate_band_slope(...)           ║
+    ║ • theta_slopes.append(slopes)                  ║
+    ║ • alpha_range.append(alpha)                    ║
+    ║ • [Commented out in current code]              ║
+    ╚════════════┬───────────────────────────────────╝
+                 │
+                 ↓ (Optional - Currently Commented)
+    ╔════════════════════════════════════════════════╗
+    ║  5f: OPTIONAL - Calculate Charge Density       ║
+    ╠════════════════════════════════════════════════╣
+    ║ for charge_type in [0~5]:                      ║
+    ║   for k_point_type in [0~2]:                   ║
+    ║     • plot_charge(...)                         ║
+    ║     • Compute ψ²(r) on real-space grid         ║
+    ║     • Output: charge_distribution_*.png        ║
+    ║ • [Commented out in current code]              ║
+    ╚═══════════════┬────────────────────────────────╝
+                    │
+        ╔═══════════╩════════════════════════╗
+        ║  Loop ends (all θ processed)       ║
+        ╚═══════════╦════════════════════════╝
+                    │
+                    ↓ (Optional - Currently Commented)
+    ╔════════════════════════════════════════════════╗
+    ║  STEP 6: Plot Velocity (v vs α or θ)           ║
+    ╠════════════════════════════════════════════════╣
+    ║ • plot_velocity(theta_range, slopes, ...)      ║
+    ║ • Type 0: v vs θ                               ║
+    ║ • Type 1: log(v/v_F) vs α (with minima)        ║
+    ║ • Type 2: v vs α²                              ║
+    ║ • [Commented out in current code]              ║
+    ╚════════════════┬───────────────────────────────╝
+                     │
+                     ↓
+        ┌─────────────────────────────────────────┐
+        │  STEP 7: END                            │
+        ├─────────────────────────────────────────┤
+        │ • Print execution time                  │
+        │ • All output saved to 'radius={length}' │
+        └─────────────────────────────────────────┘
